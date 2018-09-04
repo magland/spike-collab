@@ -23,3 +23,9 @@
 - [UltraMegaSort](https://github.com/rheitz1/Mat_Code/tree/master/UltraMegaSort)
 
 - Others?...
+
+## Ground truth datasets
+
+- [Kampff 2016](http://www.kampff-lab.org/validating-electrodes/)
+
+- [Yger](http://www.yger.net/software/ground-truth-recordings/)
