@@ -11,3 +11,6 @@ Let's start putting some code, documentation, links, etc.
 * Let's not worry too much about the structure as we can reorganize it later.
 * Pull requests are good, but at the early stages it's okay to simply push to the repo when modifying files that are primarily owned by a single contributor
 
+## Documents in this repo
+
+* [miscellaneous_links.md](docs/miscellaneous_links.md)
