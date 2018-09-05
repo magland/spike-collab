@@ -2,7 +2,7 @@
 
 A brainstorming/sandbox repository facilitating collaboration on spike sorting comparison and validation.
 
-This repository resulted from a call with Jeremy Magland, Alessio Buccino, Espen Hagen, Matthias Henning, and Cole Hurwitz.
+This repository resulted from a call with Jeremy Magland, Alessio Buccino, Espen Hagen, Matthias Hennig, and Cole Hurwitz.
 
 Let's start putting some code, documentation, links, etc.
 

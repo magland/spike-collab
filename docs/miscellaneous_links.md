@@ -8,6 +8,10 @@
 
 * [evalSort](https://github.com/alejoe91/evalSort) -- Python utility for evaluation of spike sorting performance.
 
+* [NoWorkflow](https://pypi.org/project/noworkflow/) -- Provenance framework for Python: The noWorkflow project aims at allowing scientists to benefit from provenance data analysis even when they don’t use a workflow system. Also, the goal is to allow them to avoid using naming conventions to store files originated in previous executions. It uses Software Engineering techniques such as abstract syntax tree (AST) analysis, reflection, and profiling, to collect provenance without the need of a version control system or any other environment.
+
+* Ideas for publishing data and content via Github from the [York lab](https://andrewgyork.github.io/).
+
 ## Spike sorting software
 
 - [KiloSort](https://github.com/cortex-lab/KiloSort)
@@ -22,10 +26,16 @@
 
 - [UltraMegaSort](https://github.com/rheitz1/Mat_Code/tree/master/UltraMegaSort)
 
+- [HS2: Herding Spikes 2](https://github.com/mhhennig/HS2)
+
+- [JRCLUST](https://github.com/JaneliaSciComp/JRCLUST)
+
 - Others?...
 
 ## Ground truth datasets
 
 - [Kampff 2016](http://www.kampff-lab.org/validating-electrodes/)
+
+- Marques-Smith et al., 2018: [data](http://bit.ly/paired_recs), [code](http://bit.ly/paired_git), [paper](http://dx.doi.org/10.1101/370080)
 
 - [Yger](http://www.yger.net/software/ground-truth-recordings/)
