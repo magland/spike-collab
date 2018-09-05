@@ -13,4 +13,5 @@ Let's start putting some code, documentation, links, etc.
 
 ## Documents in this repo
 
+* Spike sorting software: [spike_sorters.md](docs/spike_sorters.md)
 * [miscellaneous_links.md](docs/miscellaneous_links.md)
