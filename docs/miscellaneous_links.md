@@ -14,6 +14,8 @@
 
 ## Spike sorting software
 
+- [JRClust](https://github.com/JaneliaSciComp/JRCLUST)
+
 - [KiloSort](https://github.com/cortex-lab/KiloSort)
 
 - [MountainSort](https://github.com/flatironinstitute/mountainlab-js)
