@@ -30,8 +30,6 @@
 
 - [HS2: Herding Spikes 2](https://github.com/mhhennig/HS2)
 
-- [JRCLUST](https://github.com/JaneliaSciComp/JRCLUST)
-
 - Others?...
 
 ## Ground truth datasets
