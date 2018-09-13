@@ -14,7 +14,7 @@ spike sorting. It allows for realistic generation of extracellular recording sit
 
 ### Future Work
 
-More probes will be implemented (Neuroseeker, tetrodes, etc.) along with more brain regions (hippocampus, etc.).
+More probes will be implemented (Neuroseeker, H-Series, tetrodes,  etc.) along with more brain regions (hippocampus, thalamus, etc.) and more animals (mouse).
 
 ### Papers Referenced
 
