@@ -1,6 +1,6 @@
 # Extracellular Recording Site Simulator
 
-Tool for creating a biophysically realistic recording site given a probe geometry and brain region. Currently supports the Neuropixels probe and a Somatosensory cortex column brain region.
+Tool for creating a biophysically realistic recording site given a probe geometry and brain region. Currently supports the Neuropixels probe and the Somatosensory cortex column brain region of a rat.
  
 
 ## Getting Started
@@ -14,7 +14,7 @@ spike sorting. It allows for realistic generation of extracellular recording sit
 
 ### Future Work
 
-More probes will be implemented (Neuroseeker) along with more brain regions (hippocampus).
+More probes will be implemented (Neuroseeker, H-Series, tetrodes,  etc.) along with more brain regions (hippocampus, thalamus, etc.) and more animals (mouse).
 
 ### Papers Referenced
 
