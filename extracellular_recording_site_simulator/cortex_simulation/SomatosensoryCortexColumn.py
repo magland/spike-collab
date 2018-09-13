@@ -26,89 +26,14 @@ class SomatosensoryColumn(object):
         layer_df (array_like)     DataFrame containing all layers in the column                                         
         neuron_df (DataFrame)     Dataframe containing neurons in the column
     """
-    def __init__(self, layer_df=None, neuron_df=None, min_neuron_dist=3):
+    def __init__(self, cortex_data_dict, layer_df=None, neuron_df=None, min_neuron_dist=3):
         self.layer_df = layer_df
         self.neuron_df = neuron_df
         self.min_neuron_dist = min_neuron_dist
         
-    def buildColumn(self, cortex_data_dict):
-        '''This function fills both the layer Dataframe and neuron DataFrame according to the data dictionary it is passed.
-           
-           The steps of this function are:
-              
-              1) Import data_dict for the cortical region
-              2) Build density vs depth distributions for each layer using data_dict in order to place neurons later
-              3) Fill layer DataFrame using details from data_dict and density/depth distributions
-              4) Fill neuron DataFrame using details from data_dict and layer DataFrame
-
-        Parameters
-        ----------
-        cortex_data_dict: dict
-            Contains all biophysical details for creating an average cortical column. Must contain: heights (microns), volumes 
-            (milliliters), total_counts (neuron counts), total_densities (10^3/mm^3), and in_ratios (inhibitory neuron 
-            percentage of total).
-            
-        '''
-        #Import data in dictionary format
-        attributes = ['heights', 'volumes', 'total_counts', 'total_densities', 'in_ratios']
-        new_column_dict = self.__sampleColumnDict(cortex_data_dict, attributes)
-        layers = new_column_dict['layers']
-        self.num_layers = len(layers)
+        #Private function call to build the column from the cortex column dict
+        self.__buildColumn(cortex_data_dict)
         
-        #Generate density vs. depth distributions for the column and for each layer
-        self.__generateDensityDistribution(new_column_dict)
-        self.__generateLayerDensityDistributions()
-        
-        #Build layer DataFrame
-        layers_list = []
-        for layer_id in range(len(new_column_dict['layers'])):
-            height = new_column_dict['heights'][layer_id]
-            volume = new_column_dict['volumes'][layer_id]
-            total_count = new_column_dict['total_counts'][layer_id]
-            total_density = new_column_dict['total_densities'][layer_id]
-            in_ratio = new_column_dict['in_ratios'][layer_id]
-            layer_density_distribution = self.layer_density_distributions[layer_id]
-            region = new_column_dict['layers'][layer_id]
-            layer = Layer(layer_id, region, height, volume, total_count, total_density, in_ratio, layer_density_distribution)
-            layers_list.append(layer)           
-        #Layer DataFrame
-        self.layer_df = pd.DataFrame(layers_list, columns=Layer._fields)
-        
-        #Build neuron DataFrame
-        prev_neuron_pos  = None
-        all_neurons = []
-        all_neuron_count = 0
-
-        for layer_id in range(len(new_column_dict['layers'])):
-            depth_start = self.depths[layer_id]
-            radius = math.sqrt(new_column_dict['volumes'][layer_id]/(new_column_dict['heights'][layer_id]/(1000)*math.pi))*1000
-            height = new_column_dict['heights'][layer_id]
-            total_neurons = int(round(new_column_dict['total_counts'][layer_id]))
-            in_ratio = new_column_dict['in_ratios'][layer_id]
-            in_neurons = int(round(total_neurons*(in_ratio/100)))
-            ex_neurons = int(round(total_neurons)) - in_neurons
-            total_neurons = in_neurons + ex_neurons
-            density_dist = self.layer_density_distributions[layer_id]
-            in_neuron_positions, ex_neuron_positions, neuron_positions = self.__fillNeuronsRejection(in_neurons, ex_neurons, 
-                                                                                                     radius, height,
-                                                                                                     depth_start, density_dist,
-                                                                                       prev_neuron_positions=prev_neuron_pos) 
-            prev_neuron_pos = neuron_positions
-            #Fill the neuron dataframe with all the neurons being plotted
-            for i in range(in_neuron_positions.shape[0]):
-                in_neuron_position = in_neuron_positions[i]
-                new_neuron = Neuron(all_neuron_count, in_neuron_position, 'IN', new_column_dict['layers'][layer_id])
-                all_neurons.append(new_neuron)
-                all_neuron_count += 1
-            for i in range(ex_neuron_positions.shape[0]):
-                ex_neuron_position = ex_neuron_positions[i]
-                new_neuron = Neuron(all_neuron_count, ex_neuron_position, 'EX', new_column_dict['layers'][layer_id])
-                all_neurons.append(new_neuron)
-                all_neuron_count += 1
-        #Neuron DataFrame
-        self.neuron_df = pd.DataFrame(all_neurons, columns=Neuron._fields)
-
-
     def plotLayer(self, layer_id, resolution=100, color='r', alpha=.1, x_center=0.0, y_center=0.0, ax=None):
         '''This plots the given layer and the neurons contained in the layer.
 
@@ -279,14 +204,15 @@ class SomatosensoryColumn(object):
             X, Z = np.meshgrid(x, z)
 
             Y = np.sqrt(radius**2 - (X - x_center)**2) + y_center # Pythagorean theorem
-
-            ax.plot_surface(X, Y, Z, linewidth=0, color=np.random.rand(3,1), alpha=alpha)
-            ax.plot_surface(X, (2*y_center-Y), Z, linewidth=0, color=np.random.rand(3,1), alpha=alpha)
-            floor = Circle((x_center, y_center), radius, color=np.random.rand(3,1), alpha=alpha)
+            
+            color = np.random.rand(3,)
+            ax.plot_surface(X, Y, Z, linewidth=0, color=color, alpha=alpha)
+            ax.plot_surface(X, (2*y_center-Y), Z, linewidth=0, color=color, alpha=alpha)
+            floor = Circle((x_center, y_center), radius, color=color, alpha=alpha)
             ax.add_patch(floor)
             art3d.pathpatch_2d_to_3d(floor, z=depth, zdir="z")
 
-            ceiling = Circle((x_center, y_center), radius, color=np.random.rand(3,1), alpha=alpha)
+            ceiling = Circle((x_center, y_center), radius, color=color, alpha=alpha)
             ax.add_patch(ceiling)
             art3d.pathpatch_2d_to_3d(ceiling, z=depth+height, zdir="z")
 
@@ -349,6 +275,84 @@ class SomatosensoryColumn(object):
             
         '''                                
         return self.layer_df
+    
+    def __buildColumn(self, cortex_data_dict):
+        '''Private function that fills both the layer Dataframe and neuron DataFrame according to the data dictionary it is 
+        passed.
+           
+           The steps of this function are:
+              
+              1) Import data_dict for the cortical region
+              2) Build density vs depth distributions for each layer using data_dict in order to place neurons later
+              3) Fill layer DataFrame using details from data_dict and density/depth distributions
+              4) Fill neuron DataFrame using details from data_dict and layer DataFrame
+
+        Parameters
+        ----------
+        cortex_data_dict: dict
+            Contains all biophysical details for creating an average cortical column. Must contain: heights (microns), volumes 
+            (milliliters), total_counts (neuron counts), total_densities (10^3/mm^3), and in_ratios (inhibitory neuron 
+            percentage of total).
+            
+        '''
+        #Import data in dictionary format
+        attributes = ['heights', 'volumes', 'total_counts', 'total_densities', 'in_ratios']
+        new_column_dict = self.__sampleColumnDict(cortex_data_dict, attributes)
+        layers = new_column_dict['layers']
+        self.num_layers = len(layers)
+        
+        #Generate density vs. depth distributions for the column and for each layer
+        self.__generateDensityDistribution(new_column_dict)
+        self.__generateLayerDensityDistributions()
+        
+        #Build layer DataFrame
+        layers_list = []
+        for layer_id in range(len(new_column_dict['layers'])):
+            height = new_column_dict['heights'][layer_id]
+            volume = new_column_dict['volumes'][layer_id]
+            total_count = new_column_dict['total_counts'][layer_id]
+            total_density = new_column_dict['total_densities'][layer_id]
+            in_ratio = new_column_dict['in_ratios'][layer_id]
+            layer_density_distribution = self.layer_density_distributions[layer_id]
+            region = new_column_dict['layers'][layer_id]
+            layer = Layer(layer_id, region, height, volume, total_count, total_density, in_ratio, layer_density_distribution)
+            layers_list.append(layer)           
+        #Layer DataFrame
+        self.layer_df = pd.DataFrame(layers_list, columns=Layer._fields)
+        
+        #Build neuron DataFrame
+        prev_neuron_pos  = None
+        all_neurons = []
+        all_neuron_count = 0
+
+        for layer_id in range(len(new_column_dict['layers'])):
+            depth_start = self.depths[layer_id]
+            radius = math.sqrt(new_column_dict['volumes'][layer_id]/(new_column_dict['heights'][layer_id]/(1000)*math.pi))*1000
+            height = new_column_dict['heights'][layer_id]
+            total_neurons = int(round(new_column_dict['total_counts'][layer_id]))
+            in_ratio = new_column_dict['in_ratios'][layer_id]
+            in_neurons = int(round(total_neurons*(in_ratio/100)))
+            ex_neurons = int(round(total_neurons)) - in_neurons
+            total_neurons = in_neurons + ex_neurons
+            density_dist = self.layer_density_distributions[layer_id]
+            in_neuron_positions, ex_neuron_positions, neuron_positions = self.__fillNeuronsRejection(in_neurons, ex_neurons, 
+                                                                                                     radius, height,
+                                                                                                     depth_start, density_dist,
+                                                                                       prev_neuron_positions=prev_neuron_pos) 
+            prev_neuron_pos = neuron_positions
+            #Fill the neuron dataframe with all the neurons being plotted
+            for i in range(in_neuron_positions.shape[0]):
+                in_neuron_position = in_neuron_positions[i]
+                new_neuron = Neuron(all_neuron_count, in_neuron_position, 'IN', new_column_dict['layers'][layer_id])
+                all_neurons.append(new_neuron)
+                all_neuron_count += 1
+            for i in range(ex_neuron_positions.shape[0]):
+                ex_neuron_position = ex_neuron_positions[i]
+                new_neuron = Neuron(all_neuron_count, ex_neuron_position, 'EX', new_column_dict['layers'][layer_id])
+                all_neurons.append(new_neuron)
+                all_neuron_count += 1
+        #Neuron DataFrame
+        self.neuron_df = pd.DataFrame(all_neurons, columns=Neuron._fields)
     
     def __sampleColumnDict(self, cortex_data_dict, attributes):
         '''Private function for sampling a new column dict given the cortex dict information passed in and the attributes
