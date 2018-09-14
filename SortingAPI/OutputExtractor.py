@@ -15,9 +15,7 @@ class OutputExtractor(object):
         '''
 
         self.implemented_get_num_units = False
-        self.implemented_extract_unit_spike_times = False
-        self.implemented_extract_unit_spike_waveforms = False
-        self.implemented_extract_events_waveforms = False
+        self.implemented_get_unit_spike_times = False
 
     def getNumUnits(self):
         '''This function returns the number of units detected in the recording
@@ -30,7 +28,7 @@ class OutputExtractor(object):
         raise NotImplementedError("The getNumUnits function is not \
                                   implemented for this extractor")
 
-    def extractUnitSpikeTimes(self, unit_id):
+    def getUnitSpikeTimes(self, unit_id):
         '''This function extracts all the spike times from the specified unit
         and returns it in the form of a numpy array of spike times.
 
@@ -46,49 +44,3 @@ class OutputExtractor(object):
         '''
         raise NotImplementedError("The extractUnitSpikeTimes function is not \
                                   implemented for this extractor")
-
-    def extractUnitSpikeWaveforms(self, unit_id, waveform_len):
-        '''This function extracts all the spike waveforms from the specified
-        unit and returns it in the form of a numpy array of spike waveforms.
-
-        Parameters
-        ----------
-        unit_id: int
-            The id that specifies a unit in the recording.
-        waveform_len: int
-            The number of frames of the waveform to be extracted
-        Returns
-        ----------
-        spike_waveforms: numpy.ndarray
-            An array containing all the spike waveforms in the specified
-            unit.
-        '''
-        raise NotImplementedError("The extractUnitSpikeWaveforms function is \
-                                  not implemented for this extractor"
-
-    def extractEventsWaveforms(self, event_ids, num_waveforms, waveform_len):
-        '''This function extracts all the spike waveforms for the specified
-        events in the recording (in chronological event order) and returns
-        the specified number of waveforms for each event in the form of a numpy
-        array of dimension num_events x num_waveforms x waveform_len.
-
-        Parameters
-        ----------
-        event_ids: array_list
-            A list of event ids (ints) that specifies the events from which the
-            waveforms will be extracted and returned.
-        num_waveforms: int
-            The number of waveforms to be extracted for each event. The first
-            waveform will be from the largest amplitude channel, then the second
-            largest amplitude channel, etc.
-        waveform_len: int
-            The number of frames of the waveform to be extracted
-        Returns
-        ----------
-        event_waveforms: numpy.ndarray
-            An array containing all the spike waveforms for each specified
-            event. Dimensions are num_events x num_waveforms x waveform_len.
-        '''
-        raise NotImplementedError("The extractEventsWaveforms function is \
-                                  not implemented for this extractor"
-
