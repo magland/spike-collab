@@ -25,7 +25,7 @@ class Column(object):
         layer_df (array_like)     DataFrame containing all layers in the column                                         
         neuron_df (DataFrame)     Dataframe containing neurons in the column
     """
-    def __init__(self, cortex_data_dict, layer_df=None, neuron_df=None, min_neuron_dist=3):
+    def __init__(self, cortex_data_dict, layer_df=None, neuron_df=None, min_neuron_dist=15):
         self.layer_df = layer_df
         self.neuron_df = neuron_df
         self.min_neuron_dist = min_neuron_dist
@@ -329,7 +329,7 @@ class Column(object):
         
         print("Filling layers with neurons...")
         for layer_id in range(len(new_column_dict['layers'])):
-            print("Filling layer " + str(new_column_dict['layers'][layer_id]))
+            print("...Filling layer " + str(new_column_dict['layers'][layer_id]) + "...")
             depth_start = self.depths[layer_id]
             radius = math.sqrt(new_column_dict['volumes'][layer_id]/(new_column_dict['heights'][layer_id]/(1000)*math.pi))*1000
             height = new_column_dict['heights'][layer_id]
