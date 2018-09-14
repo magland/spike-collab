@@ -4,7 +4,6 @@ np.set_printoptions(suppress=True)
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from scipy import stats
-from tqdm import tqdm
 from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d.art3d as art3d
 from matplotlib.patches import Circle
@@ -301,10 +300,13 @@ class Column(object):
         self.num_layers = len(layers)
         
         #Generate density vs. depth distributions for the column and for each layer
+        print("Building density/depth distributions...")
         self.__generateDensityDistribution(new_column_dict)
         self.__generateLayerDensityDistributions()
+        print("... distributions built!")
         
         #Build layer DataFrame
+        print("Building layers...")
         layers_list = []
         for layer_id in range(len(new_column_dict['layers'])):
             height = new_column_dict['heights'][layer_id]
@@ -318,13 +320,16 @@ class Column(object):
             layers_list.append(layer)           
         #Layer DataFrame
         self.layer_df = pd.DataFrame(layers_list, columns=Layer._fields)
+        print("... layers built!")
         
         #Build neuron DataFrame
         prev_neuron_pos  = None
         all_neurons = []
         all_neuron_count = 0
-
+        
+        print("Filling layers with neurons...")
         for layer_id in range(len(new_column_dict['layers'])):
+            print("Filling layer " + str(new_column_dict['layers'][layer_id]))
             depth_start = self.depths[layer_id]
             radius = math.sqrt(new_column_dict['volumes'][layer_id]/(new_column_dict['heights'][layer_id]/(1000)*math.pi))*1000
             height = new_column_dict['heights'][layer_id]
@@ -352,6 +357,7 @@ class Column(object):
                 all_neuron_count += 1
         #Neuron DataFrame
         self.neuron_df = pd.DataFrame(all_neurons, columns=Neuron._fields)
+        print("... all layers filled!")
     
     def __sampleColumnDict(self, cortex_data_dict, attributes):
         '''Private function for sampling a new column dict given the cortex dict information passed in and the attributes
@@ -502,7 +508,7 @@ class Column(object):
             all_neuron_positions = np.append(all_neuron_positions, np.asarray([x, y, z]).reshape((1,3)), axis=0)
 
         #Try to add additional points with min dist requirement between points
-        for z in Z[1:]:
+        for i, z in enumerate(Z[1:]):
             accepted_sample = False
             while not accepted_sample:
                 length = np.sqrt(np.random.uniform(0, radius**2))
