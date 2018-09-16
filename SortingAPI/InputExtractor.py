@@ -35,9 +35,22 @@ class InputExtractor(object):
         raw_traces: numpy.ndarray
             A 2D array that contains all of the raw slices from each electrode.
             Dimensions are: (num_electrodes x num_frames)
+        timestamps: numpy.array
+            A 1D array containing sliced timestamps in Quantity
         '''
         raise NotImplementedError("The extractRawTraces function is not \
                                   implemented for this extractor")
+
+    def getSamplingFrequency(self):
+        '''This function returns sampling frequency
+
+        Returns
+        -------
+        fs: Quantity
+            Sampling frequency of the recordings
+        '''
+        raise NotImplementedError("The getSamplingFrequency function is not \
+                                          implemented for this extractor")
 
     def getProbeInformation(self):
         '''This function returns the name, sampling rate, and recording electrode

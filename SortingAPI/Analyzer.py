@@ -1,118 +1,149 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import quantities as pq
 
-class ExtracellularAnalyzer(object):
-    '''A class that takes in an ExtracellularExtractor and implements
-    standardized evaluation and visualization using the functions from the
-    ExtracellularExtractor and built in code.
+# use InputExtractor and OutputExtractor
+from InputExtractor import InputExtractor
+from OutputExtractor import OutputExtractor
+
+class Analyzer(object):
+    '''A class that handles InputExtractor and OutputExtractor objects and performs
+    standardized analysis and evaluation on spike sorting output.
 
     Attributes:
-        num_units (int)                       Number of units detected in the recording
-        spike_times (numpy.ndarray (2D))      Contains all spike times for each unit
-        spike_waveforms (numpy.ndarray (2D))  Contains all spike waveforms for each unit
-
+        input_extractor (InputExtractor)
+        output_extractor (InputExtractor)
     '''
-    def __init__(self, extracellular_extractor, waveform_len=30):
+    def __init__(self, input_extractor, output_extractor):
         '''No need to initalize the parent class with any parameters (unless we
         agree on a standard attribute every spike sorter needs)
         '''
-
-        #Make sure the most basic function is implemented or this will break!
-        if(extracellular_extractor.implemented_get_num_units):
-            self.num_units = extracellular_extractor.getNumUnits()
+        # to perform comparisons between spike sorters
+        if type(input_extractor) == InputExtractor:
+            self.input_extractor = input_extractor
         else:
-            raise NotImplementedError("You have to implement getNumUnits!")
+            raise AttributeError('Input extractor argument should be an InputExtractor object')
+        if type(output_extractor) == OutputExtractor:
+            self.output_extractor = output_extractor
+        else:
+            raise AttributeError('Output extractor argument should be an OutputExtractor object')
 
-        self.waveform_len = waveform_len
-
-        #More code below depending on what functions we want
-
-    '''
-    This implementation allows for the analyzer to return important information
-    using the passed in ExtracellularExtractor if the ExtracellularExtractor
-    implemented the corresponding functions. Otherwise it will throw an error.
-    '''
-    def getNumUnits(self):
-        '''This function returns the number of units detected in the recording
+    def inputExtractor(self):
+        '''This function returns the input extractor and allows tu call its methods
 
         Returns
         ----------
-        num_units: int
-            The number of units in the recording
+        input_extractor (InputExctractor)
         '''
-        return self.num_units
+        return self.input_extractor
 
-    def getUnitSpikeTimes(self, unit_id):
-        '''This function returns the spike times from the specified unit
-        in the form of a numpy array of spike times.
+    def outputExtractor(self):
+        '''This function returns the output extractor and allows tu call its methods
 
         Returns
         ----------
-        spike_times: numpy.ndarray
-            An 1D array containing all the spike times in the specified
-            unit.
+        output_extractor (OutputExctractor)
         '''
-        if(extracellular_extractor.implemented_extract_unit_spike_times):
-            unit_spike_times = extracellular_extractor.extractUnitSpikeTimes(unit_id)
-            return unit_spike_times
-        else:
-            raise NotImplementedError("The extractor did not implement extractUnitSpikeTimes")
+        return self.output_extractor
 
-    def getUnitSpikeWaveforms(self, unit_id):
-        '''This function returns the spike waveforms from the specified unit
+    def getUnitSpikeWaveforms(self, unit_id, t_start=None, t_stop=None, cutout=[3., 3.]):
+        '''This function returns the spike waveforms from the specified unit_id from t_start and t_stop
         in the form of a numpy array of spike waveforms.
-
-        Returns
-        ----------
-        spike_times: numpy.ndarray
-            An 2D array containing all the spike waveforms in the specified
-            unit.
-        '''
-        if(extracellular_extractor.implemented_extract_unit_spike_waveforms):
-            unit_spike_waveforms = extracellular_extractor.extractUnitSpikeWaveforms(unit_id, self.waveform_len)
-            return unit_spike_waveforms
-        else:
-            raise NotImplementedError("The extractor did not implement extractUnitSpikeWaveforms")
-
-
-    '''
-    This implementation also allows for the analyzer to use the Extracellular
-    Extractor to do more exciting universal functions such as plotting waveforms,
-    returning NEO spike trains, or running unsupervised metrics for getting
-    spike sorting results.
-    '''
-
-    def plotUnitWaveforms(self, unit_id, num_waveforms):
-        '''This function plots all the waveforms in the specified unit in a
-        clean and appropriate manner. It will throw an error if the ExtracellularExtractor
-        did not implement the needed functions.
 
         Parameters
         ----------
-        unit_id: int
-            The id that specifies a unit in the recording.
-        num_waveforms: int
-            The number of waveforms to be plotted.
-        '''
-        unit_waveforms = self.getUnitSpikeWaveforms(unit_id)
-        do some plotting of unit_waveforms
+        unit_id: (int)
+            The unit to extract waveforms from
+        t_start: (int) or (Quantity)
+            Starting time to extract waveforms (default=None, if int it is assumed in seconds)
+        t_stop: (int) or (Quantity)
+            Stop time to extract waveforms (default=None, if int it is assumed in seconds)
+        cutout: list of 2 float or 2 Quantities
+            Time to cut out waveform before (cutout[0]) and after (cutout[1]) the peak. If float it is assumed ms
 
-    def getSpikeTrain(self, unit_id):
+        Returns
+        -------
+
+        '''
+        recordings, times = self.input_extractor.extractRawSlices(t_start, t_stop)
+        fs = self.input_extractor.getSamplingFrequency()
+        spike_times = self.input_extractor.getUnitSpikeTimes(unit_id, t_start, t_stop)
+
+        if type(cutout[0]) == float:
+            n_pad = [int(cutout[0] * pq.ms * fs.rescale('kHz')), int(cutout[1] * pq.ms * fs.rescale('kHz'))]
+        elif type(cutout[0]) == pq.Quantity:
+            n_pad = [int(cutout[0].rescale('ms') * fs.rescale('kHz')), int(cutout[1].rescale('ms') * fs.rescale('kHz'))]
+        nchs, npts = recordings.shape
+        nsamples = np.sum(n_pad)
+
+        waveforms = np.zeros((len(spike_times), nchs, nsamples))
+        first_spike = True
+
+        for t_i, t in enumerate(spike_times):
+            idx = np.where(times > t)[0]
+            if len(idx) != 0:
+                # find single waveforms crossing thresholds
+                if idx - n_pad > 0 and idx + n_pad < nPts:
+                    t_spike = times[idx - n_pad:idx + n_pad]
+                    wf = recordings[:, idx - n_pad:idx + n_pad]
+                elif idx - n_pad < 0:
+                    t_spike = times[:idx + n_pad]
+                    t_spike = np.pad(t_spike, (np.abs(idx - n_pad), 0), 'constant') * unit
+                    wf = recordings[:, :idx + n_pad]
+                    wf = np.pad(spike_rec, ((0, 0), (np.abs(idx - n_pad), 0)), 'constant')
+                elif idx + n_pad > nPts:
+                    t_spike = times[idx - n_pad:]
+                    t_spike = np.pad(t_spike, (0, idx + n_pad - nPts), 'constant') * unit
+                    wf = recordings[:, idx - n_pad:]
+                    wf = np.pad(spike_rec, ((0, 0), (0, idx + n_pad - nPts)), 'constant')
+                if first_spike:
+                    nsamples = len(spike_rec)
+                    waveforms = np.zeros((len(spike_times), nchs, nsamples))
+                    first_spike = False
+                waveforms[t_i] = wf
+
+        return waveforms
+
+
+    def getSpikeTrain(self, unit_id=None, t_start=None, t_stop=None):
         '''This function returns a NEO spike train for the given unit.
         It will throw an error if the ExtracellularExtractor did not implement
         the needed functions.
 
         Parameters
         ----------
-        unit_id: int
-            The id that specifies a unit in the recording.
+        unit_id: int or list
+            The id that specifies a unit or a list of units in the recording. If None all units are returned.
+        t_start: (int) or (Quantity)
+            Starting time to clip spike trains (default=None, if int it is assumed in seconds)
+        t_stop: (int) or (Quantity)
+            Stop time to clip spike trains (default=None, if int it is assumed in seconds)
         Returns
         ----------
-        spike_train: NEOSPIKETRAIN.type
-            A neospike train for the specified unit spike times
+        spike_train: list of Neo.Spiketrain
+            A list of neo.Spiketrain for the specified units spike times
         '''
-        unit_times = self.getUnitSpikeTimes(unit_id)
-        return NEOSPIKETRAINWRAPPER(unit_times)
+        if unit_id is None:
+            # extract all spiketrains
+            spike_trains = []
+            for i in range(self.output_extractor.getNumUnits()):
+                spike_times = self.input_extractor.getUnitSpikeTimes(i, t_start, t_stop)
+                st = neo.SpikeTrain(spike_times, t_start=t_start, t_stop=t_stop)
+                spike_trains.append(spiketrain)
+        elif type(unit_id) is int:
+            spike_times = self.input_extractor.getUnitSpikeTimes(unit_id, t_start, t_stop)
+            st = neo.SpikeTrain(spike_times, t_start=t_start, t_stop=t_stop)
+            spike_trains = [st]
+        elif type(unit_id) is list:
+            spike_trains = []
+            for i in unit_id:
+                spike_times = self.input_extractor.getUnitSpikeTimes(i, t_start, t_stop)
+                st = neo.SpikeTrain(spike_times, t_start=t_start, t_stop=t_stop)
+                spike_trains.append(spiketrain)
+        else:
+            raise AttributeError('unit_id should be either None, int, or list')
+
+        return spike_trains
 
     def getClusterStability(self, unit_id):
         '''This function returns the cluster stability of a given unit.
@@ -128,6 +159,4 @@ class ExtracellularAnalyzer(object):
         cluster_stability: float
             The cluster stability of the specified unit
         '''
-        unit_waveforms = self.getUnitSpikeWaveforms(unit_id)
-        cluster_stability = do some code
-        return cluster_stability
+        pass

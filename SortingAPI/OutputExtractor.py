@@ -28,7 +28,7 @@ class OutputExtractor(object):
         raise NotImplementedError("The getNumUnits function is not \
                                   implemented for this extractor")
 
-    def getUnitSpikeTimes(self, unit_id):
+    def getUnitSpikeTimes(self, unit_id, t_start=None, t_stop=None):
         '''This function extracts all the spike times from the specified unit
         and returns it in the form of a numpy array of spike times.
 
