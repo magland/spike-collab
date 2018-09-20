@@ -30,7 +30,7 @@ class OutputVisualizer:
         
         list=[]
         for unit in units:
-            spikes=self._get_random_spike_waveforms(unit=unit,max_num=20,channels=channels)
+            spikes=self._get_random_spike_waveforms(unit=unit,max_num=50,channels=channels)
             item=dict(
                 representative_waveforms=spikes,
                 title='Unit {}'.format(unit)
@@ -82,7 +82,7 @@ class OutputVisualizer:
                     YY[:,m,j]=loc[1]+representative_waveforms[m,:,j]-representative_waveforms[m,0,j]
             XX=XX.reshape(T,M*L)
             YY=YY.reshape(T,M*L)
-            plt.plot(XX, YY, 'gray', alpha=0.2)
+            plt.plot(XX, YY, color=(0.5,0.5,0.5), alpha=0.4)
 
             XX=np.zeros((T,M))
             YY=np.zeros((T,M))
