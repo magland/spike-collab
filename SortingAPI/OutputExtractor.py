@@ -1,22 +1,17 @@
-import numpy as np
 from abc import ABC, abstractmethod
 
 class OutputExtractor(ABC):
     '''A class that contains functions for extracting important information
-    from the output data of spike sorting software.
+    from the output data of spike sorting software. It is an abstract class so
+    all functions with the @abstractmethod tag must be implemented for the
+    initialization to work.
 
-    Attributes:
-        We can include any agreed upon global attributes every extractor must
-        have here. If we agree on nothing, then it needs no shared attributes!
 
     '''
     def __init__(self):
-        '''No need to initalize the parent class with any parameters (unless we
-        agree on a standard attribute every spike sorter needs)
-        '''
 
-        self.implemented_get_num_units = False
-        self.implemented_get_unit_spike_times = False
+        # self.implemented_get_num_units = False
+        # self.implemented_get_unit_spike_times = False
 
     @abstractmethod
     def getNumUnits(self):
@@ -30,26 +25,30 @@ class OutputExtractor(ABC):
         pass
 
     @abstractmethod
-    def getUnitSpikeTimes(self, unit_id, t_start=None, t_end=None):
-        '''This function extracts spike times from the specified unit.
-        The inputs t_start and t_end give the range from which the extracted
-        spike times can occur. If t_start and t_end are given then the spike
-        times are returned which fall in the range:
-                    [t_start, t_start+1, ..., t_end-1]
-        Spike times are returned in the form of a numpy array of spike times.
+    def getUnitSpikeTrain(self, unit_id, start_frame=None, end_frame=None):
+        '''This function extracts spike frames from the specified unit.
+        It will return spike frames within three ranges:
+
+            [start_frame, t_start+1, ..., end_frame-1]
+            [start_frame, start_frame+1, ..., final_unit_spike_frame]
+            [beginning_unit_spike_frame, beginning_unit_spike_frame+1, ..., end_frame-1]
+
+        if both start_frame and end_frame are given, if only start_frame is
+        given, or if only end_frame is given, respectively. Spike frames are
+        returned in the form of a array_like of spike frames.
 
         Parameters
         ----------
         unit_id: int
             The id that specifies a unit in the recording.
-        t_start: int
-            The frame above which a spike time is returned.
-        t_end: int
-            The frame below which a spike time is returned.
+        start_frame: int
+            The frame above which a spike frame is returned.
+        end_frame: int
+            The frame below which a spike frame is returned.
         Returns
         ----------
-        spike_times: numpy.ndarray
-            An 1D array containing all the spike times in the specified
-            unit.
+        spike_train: array_like
+            An 1D array containing all the frames for each spike in the
+            specified unit given the range of start and end frames.
         '''
         pass
