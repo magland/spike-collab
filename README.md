@@ -15,4 +15,4 @@ Let's start putting some code, documentation, links, etc.
 
 * Spike sorting software: [spike_sorters.md](docs/spike_sorters.md)
 * Ground truth datasets: [ground_truth_datasets.md](docs/ground_truth_datasets.md)
-* [miscellaneous_links.md](docs/miscellaneous_links.md)
+* Potential Tools: [miscellaneous_links.md](docs/miscellaneous_links.md)
