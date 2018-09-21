@@ -1,6 +1,7 @@
 import numpy as np
+from abc import ABC, abstractmethod
 
-class InputExtractor(object):
+class InputExtractor(ABC):
     '''A class that contains functions for extracting important information
     from input data to spike sorting software.
 
@@ -17,6 +18,7 @@ class InputExtractor(object):
         self.implemented_get_raw_traces = False
         self.implemented_get_probe_information = False
 
+    @abstractmethod
     def extractRawTraces(self, t_start=None, t_end=None, electrode_ids=None):
         '''This function extracts and returns a trace from the raw data from the
         given electrode ids.
@@ -38,9 +40,9 @@ class InputExtractor(object):
         timestamps: numpy.array
             A 1D array containing sliced timestamps with a Quantity per timestamp
         '''
-        raise NotImplementedError("The extractRawTraces function is not \
-                                  implemented for this extractor")
+        pass
 
+    @abstractmethod
     def getSamplingFrequency(self):
         '''This function returns sampling frequency
 
@@ -49,8 +51,7 @@ class InputExtractor(object):
         fs: Quantity
             Sampling frequency of the recordings
         '''
-        raise NotImplementedError("The getSamplingFrequency function is not \
-                                          implemented for this extractor")
+        pass
 
     def getProbeInformation(self):
         '''This function returns the name, sampling rate, and recording electrode

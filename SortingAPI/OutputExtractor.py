@@ -1,6 +1,7 @@
 import numpy as np
+from abc import ABC, abstractmethod
 
-class OutputExtractor(object):
+class OutputExtractor(ABC):
     '''A class that contains functions for extracting important information
     from the output data of spike sorting software.
 
@@ -17,6 +18,7 @@ class OutputExtractor(object):
         self.implemented_get_num_units = False
         self.implemented_get_unit_spike_times = False
 
+    @abstractmethod
     def getNumUnits(self):
         '''This function returns the number of units detected in the recording
 
@@ -25,9 +27,9 @@ class OutputExtractor(object):
         num_units: int
             The number of units in the recording
         '''
-        raise NotImplementedError("The getNumUnits function is not \
-                                  implemented for this extractor")
+        pass
 
+    @abstractmethod
     def getUnitSpikeTimes(self, unit_id, t_start=None, t_end=None):
         '''This function extracts spike times from the specified unit.
         The inputs t_start and t_end give the range from which the extracted
@@ -50,5 +52,4 @@ class OutputExtractor(object):
             An 1D array containing all the spike times in the specified
             unit.
         '''
-        raise NotImplementedError("The extractUnitSpikeTimes function is not \
-                                  implemented for this extractor")
+        pass
