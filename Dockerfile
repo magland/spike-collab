@@ -4,7 +4,7 @@ FROM magland/jp_proxy_widget:20180831
 RUN conda config --add channels flatiron
 RUN conda config --add channels conda-forge
 RUN conda install mountainlab>=0.15
-RUN conda install mountainlab_pytools
+RUN conda install mountainlab_pytools>=0.7
 RUN conda install ml_ephys ml_ms4alg ml_ms3 ml_pyms
 RUN conda install ml_spikeforest
 
