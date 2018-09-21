@@ -29,7 +29,7 @@ class TimeseriesWidget:
     def figure(self):
         return self._figure
     def _update_plot(self):
-        chunk0=self._input_extractor.extractRawSlices(
+        chunk0=self._input_extractor.extractRawTraces(
             electrode_ids=self._visible_channels,
             t_start=self._visible_trange[0],
             t_end=self._visible_trange[1]
@@ -91,7 +91,7 @@ class TimeseriesWidget:
         self._channel_stats={}
         #M=self._reader.numChannels()
         #N=self._reader.numTimepoints()
-        chunk0=self._input_extractor.extractRawSlices(
+        chunk0=self._input_extractor.extractRawTraces(
             electrode_ids=self._visible_channels,
             t_start=self._visible_trange[0],
             t_end=self._visible_trange[1]
