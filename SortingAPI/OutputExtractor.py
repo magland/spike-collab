@@ -28,14 +28,22 @@ class OutputExtractor(object):
         raise NotImplementedError("The getNumUnits function is not \
                                   implemented for this extractor")
 
-    def getUnitSpikeTimes(self, unit_id, t_start=None, t_stop=None):
-        '''This function extracts all the spike times from the specified unit
-        and returns it in the form of a numpy array of spike times.
+    def getUnitSpikeTimes(self, unit_id, t_start=None, t_end=None):
+        '''This function extracts spike times from the specified unit.
+        The inputs t_start and t_end give the range from which the extracted
+        spike times can occur. If t_start and t_end are given then the spike
+        times are returned which fall in the range:
+                    [t_start, t_start+1, ..., t_end-1]
+        Spike times are returned in the form of a numpy array of spike times.
 
         Parameters
         ----------
         unit_id: int
             The id that specifies a unit in the recording.
+        t_start: int
+            The frame above which a spike time is returned.
+        t_end: int
+            The frame below which a spike time is returned.
         Returns
         ----------
         spike_times: numpy.ndarray

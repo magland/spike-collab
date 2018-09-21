@@ -14,21 +14,21 @@ class InputExtractor(object):
         agree on a standard attribute every spike sorter needs)
         '''
 
-        self.implemented_get_raw_slices = False
+        self.implemented_get_raw_traces = False
         self.implemented_get_probe_information = False
 
-    def extractRawSlices(self, t_start=None, t_end=None, electrode_ids=None):
-        '''This function extracts and returns a slice of the raw data from the
+    def extractRawTraces(self, t_start=None, t_end=None, electrode_ids=None):
+        '''This function extracts and returns a trace from the raw data from the
         given electrode ids.
 
         Parameters
         ----------
         t_start: int
-            The starting frame of the slice to be returned
+            The starting frame of the trace to be returned
         t_end: int
-            The ending frame of the slice to be returned
+            The ending frame of the trace to be returned
         electrode_ids: array_like
-            A list of electrode ids (ints) from which each slice will be extracted.
+            A list of electrode ids (ints) from which each trace will be extracted.
 
         Returns
         ----------
@@ -36,7 +36,7 @@ class InputExtractor(object):
             A 2D array that contains all of the raw slices from each electrode.
             Dimensions are: (num_electrodes x num_frames)
         timestamps: numpy.array
-            A 1D array containing sliced timestamps in Quantity
+            A 1D array containing sliced timestamps with a Quantity per timestamp
         '''
         raise NotImplementedError("The extractRawTraces function is not \
                                   implemented for this extractor")
