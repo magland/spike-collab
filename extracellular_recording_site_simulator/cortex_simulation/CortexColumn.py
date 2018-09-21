@@ -14,7 +14,7 @@ from scipy.spatial import cKDTree
 from collections import namedtuple
 import matplotlib.ticker as ticker
 
-Layer = namedtuple("Layer", ["id", "region", "height", "volume", "total_count", "total_density", "in_ratio", 
+Layer = namedtuple("Layer", ["id", "region", "height", "radius", "volume", "neuron_count", "density", "in_ratio", 
                              "layer_density_distributions"])
 Neuron = namedtuple("Neuron", ["id", "pos", "type", "layer"])
 
@@ -25,10 +25,11 @@ class Column(object):
         layer_df (array_like)     DataFrame containing all layers in the column                                         
         neuron_df (DataFrame)     Dataframe containing neurons in the column
     """
-    def __init__(self, cortex_data_dict, layer_df=None, neuron_df=None, min_neuron_dist=15):
+    def __init__(self, cortex_data_dict, layer_df=None, neuron_df=None, radius=200, min_neuron_dist=15):
         self.layer_df = layer_df
         self.neuron_df = neuron_df
         self.min_neuron_dist = min_neuron_dist
+        self.radius = radius
         
         #Private function call to build the column from the cortex column dict
         self.__buildColumn(cortex_data_dict)
@@ -57,7 +58,7 @@ class Column(object):
         depth_start = self.depths[layer_id]                            
         height = self.layer_df.loc[layer_id].height
         radius = math.sqrt(self.layer_df.loc[layer_id].volume/(height/(1000)*math.pi))*1000
-        total_neurons = int(round(self.layer_df.loc[layer_id].total_count))
+        total_neurons = int(round(self.layer_df.loc[layer_id].neuron_count))
         in_ratio = self.layer_df.loc[layer_id].in_ratio
         in_neurons = int(round(total_neurons*(in_ratio/100)))
         ex_neurons = int(round(total_neurons)) - in_neurons
@@ -137,7 +138,7 @@ class Column(object):
         layer_names = []
                                       
         for i, row in self.layer_df.iterrows():
-            radius = math.sqrt(row['volume']/(row['height']/(1000)*math.pi))*1000
+            radius = row['radius']
             radii.append(radius)
             height = row['height']
             heights.append(height)    
@@ -288,16 +289,14 @@ class Column(object):
         Parameters
         ----------
         cortex_data_dict: dict
-            Contains all biophysical details for creating an average cortical column. Must contain: heights (microns), volumes 
-            (milliliters), total_counts (neuron counts), total_densities (10^3/mm^3), and in_ratios (inhibitory neuron 
-            percentage of total).
+            Contains all biophysical details for creating an average cortical column. Must contain: heights (microns),
+            densities (10^3/mm^3), and in_ratios (inhibitory neuron percentage of total).
             
         '''
         #Import data in dictionary format
-        attributes = ['heights', 'volumes', 'total_counts', 'total_densities', 'in_ratios']
+        attributes = ['heights', 'densities', 'in_ratios']
         new_column_dict = self.__sampleColumnDict(cortex_data_dict, attributes)
-        layers = new_column_dict['layers']
-        self.num_layers = len(layers)
+        self.num_layers = len(new_column_dict['layers'])
         
         #Generate density vs. depth distributions for the column and for each layer
         print("Building density/depth distributions...")
@@ -310,13 +309,14 @@ class Column(object):
         layers_list = []
         for layer_id in range(len(new_column_dict['layers'])):
             height = new_column_dict['heights'][layer_id]
-            volume = new_column_dict['volumes'][layer_id]
-            total_count = new_column_dict['total_counts'][layer_id]
-            total_density = new_column_dict['total_densities'][layer_id]
+            density = new_column_dict['densities'][layer_id]
+            volume = (math.pi * (self.radius**2) * height) / (1000.0**3)
+            neuron_count = int(((volume) * density)*(10.0**3))
             in_ratio = new_column_dict['in_ratios'][layer_id]
             layer_density_distribution = self.layer_density_distributions[layer_id]
             region = new_column_dict['layers'][layer_id]
-            layer = Layer(layer_id, region, height, volume, total_count, total_density, in_ratio, layer_density_distribution)
+            layer = Layer(layer_id, region, height, self.radius, volume, neuron_count, density, in_ratio, 
+                          layer_density_distribution)
             layers_list.append(layer)           
         #Layer DataFrame
         self.layer_df = pd.DataFrame(layers_list, columns=Layer._fields)
@@ -329,19 +329,19 @@ class Column(object):
         
         print("Filling layers with neurons...")
         for layer_id in range(len(new_column_dict['layers'])):
-            print("...Filling layer " + str(new_column_dict['layers'][layer_id]) + "...")
             depth_start = self.depths[layer_id]
-            radius = math.sqrt(new_column_dict['volumes'][layer_id]/(new_column_dict['heights'][layer_id]/(1000)*math.pi))*1000
             height = new_column_dict['heights'][layer_id]
-            total_neurons = int(round(new_column_dict['total_counts'][layer_id]))
+            total_neurons = self.layer_df[self.layer_df['id'] == layer_id].neuron_count.item()
             in_ratio = new_column_dict['in_ratios'][layer_id]
             in_neurons = int(round(total_neurons*(in_ratio/100)))
             ex_neurons = int(round(total_neurons)) - in_neurons
             total_neurons = in_neurons + ex_neurons
             density_dist = self.layer_density_distributions[layer_id]
+            print("...Filling layer " + str(new_column_dict['layers'][layer_id]) + " with " + str(total_neurons) + 
+                  " neurons...")
             in_neuron_positions, ex_neuron_positions, neuron_positions = self.__fillNeuronsRejection(in_neurons, ex_neurons, 
-                                                                                                     radius, height,
-                                                                                                     depth_start, density_dist,
+                                                                                                     height, depth_start, 
+                                                                                                     density_dist,
                                                                                        prev_neuron_positions=prev_neuron_pos) 
             prev_neuron_pos = neuron_positions
             #Fill the neuron dataframe with all the neurons being plotted
@@ -361,7 +361,8 @@ class Column(object):
     
     def __sampleColumnDict(self, cortex_data_dict, attributes):
         '''Private function for sampling a new column dict given the cortex dict information passed in and the attributes
-        needed to define a column. Used as a first step in the buildColumn function.
+        needed to define a column. Used as a first step in the buildColumn function. The sampled attributes are the heights 
+        (microns), the neurons densities by layer (10^3/mm^3), and the inhibitory to excitatory ratios. 
 
         Parameters
         ----------
@@ -429,7 +430,7 @@ class Column(object):
             elif(i == len((column_dict['layers'])) - 1):
                 x.append(depths[i + 1])
 
-        y = column_dict['total_densities']
+        y = column_dict['densities']
         depth_distribution = interp1d(x, y, kind='cubic')
         znew = np.linspace(x[0], x[-1], num=int(x[-1])*distance_discretization, endpoint=True)
         self.znew = znew
@@ -453,8 +454,7 @@ class Column(object):
 
         self.layer_density_distributions = layer_density_distributions
 
-    def __fillNeuronsRejection(self, in_neurons, ex_neurons, radius, height, depth_start, density_dist,
-                               prev_neuron_positions=None):
+    def __fillNeuronsRejection(self, in_neurons, ex_neurons, height, depth_start, density_dist, prev_neuron_positions=None):
         '''Private function to fill a column layer with the correct number and type of neuron corresponding to the neuron 
         density distributions for the layer and the min distance between neurons. Rejection sampling based method that uses 
         cKDTrees for speeding up distance search times.
@@ -465,12 +465,10 @@ class Column(object):
             Number of inhibitory neurons that will be placed in the layer
         ex_neurons: int
             Number of excititatory neurons that will be placed in the layer
-        radius: float
-            Radius of the layer
         height: float
-            Height of the layer
+            Height of the layer (microns)
         depth_start: float
-            The depth of the base of the layer
+            The depth of the base of the layer (microns)
         density_dist: stats.rv_discrete
             The density vs. depth density for the given layer
         prev_neuron_positions: numpy.ndarray
@@ -495,7 +493,7 @@ class Column(object):
 
         #Add first point
         z = Z[0]
-        length = np.sqrt(np.random.uniform(0, radius**2))
+        length = np.sqrt(np.random.uniform(0, self.radius**2))
         angle = np.pi * np.random.uniform(0, 2)
         x = length * np.cos(angle)
         y = length * np.sin(angle)
@@ -511,7 +509,7 @@ class Column(object):
         for i, z in enumerate(Z[1:]):
             accepted_sample = False
             while not accepted_sample:
-                length = np.sqrt(np.random.uniform(0, radius**2))
+                length = np.sqrt(np.random.uniform(0, self.radius**2))
                 angle = np.pi * np.random.uniform(0, 2)
                 x = length * np.cos(angle)
                 y = length * np.sin(angle)
@@ -561,26 +559,12 @@ def createRatSomatosensoryCortexDataDict():
     cortex_data_dict['Mean']['layers']  = layers
     cortex_data_dict['Std']['layers']  = layers
 
-    #NeuN-positive neuron Count: L1, L2, L3, L4, L5A, L5B, L6A, L6B
-    cortex_data_dict['C2']['total_counts'] = [72, 2619, 2727, 4465, 2011, 2139, 3687, 877]
-    cortex_data_dict['D2']['total_counts'] = [52, 1897, 4001, 4877, 1517, 2231, 3691, 1113]
-    cortex_data_dict['D3']['total_counts'] = [65, 1601, 4478, 3999, 1684, 2336, 3980, 1208]
-    cortex_data_dict['Mean']['total_counts'] = [63, 2039, 3735, 4447, 1737, 2235, 3786, 1066]
-    cortex_data_dict['Std']['total_counts'] = [10, 524, 905, 439, 251, 99, 168, 170]
-
-    #Neuron Count Standard Column: L1, L2, L3, L4, L5A, L5B, L6A, L6B
-    cortex_data_dict['C2']['total_counts_standard'] = [69, 2507, 2610, 4274, 1925, 2047, 3529, 839]
-    cortex_data_dict['D2']['total_counts_standard'] = [46, 1674, 3530, 4303, 1339, 1969, 3257, 982]
-    cortex_data_dict['D3']['total_counts_standard'] = [60, 1471, 4115, 3675, 1547, 2147, 3657,1110]
-    cortex_data_dict['Mean']['total_counts_standard'] = [58, 1884, 3418, 4084, 1604, 2054, 3481, 977]
-    cortex_data_dict['Std']['total_counts_standard'] = [12, 549, 758, 355, 297, 89, 204, 135]
-
     #Total densities 10^3/mm^3: L1, L2, L3, L4, L5A, L5B, L6A, L6B
-    cortex_data_dict['C2']['total_densities'] = [9.6, 99.2, 107.7, 125.0, 54.0, 57.7, 91.9, 37.7]
-    cortex_data_dict['D2']['total_densities'] = [4.9, 81.8, 94.8, 117.1, 50.5, 57.7, 91.7, 43.3]
-    cortex_data_dict['D3']['total_densities'] = [5.2, 78.3, 102.3, 129.6, 58.8, 64.2, 93.3, 44.8]
-    cortex_data_dict['Mean']['total_densities'] = [6.6, 86.4, 101.6, 123.9, 54.4, 59.8, 92.3, 42]
-    cortex_data_dict['Std']['total_densities'] = [2.7, 11.2, 6.5, 6.3, 4.1, 3.8, 0.9, 3.8]
+    cortex_data_dict['C2']['densities'] = [9.6, 99.2, 107.7, 125.0, 54.0, 57.7, 91.9, 37.7]
+    cortex_data_dict['D2']['densities'] = [4.9, 81.8, 94.8, 117.1, 50.5, 57.7, 91.7, 43.3]
+    cortex_data_dict['D3']['densities'] = [5.2, 78.3, 102.3, 129.6, 58.8, 64.2, 93.3, 44.8]
+    cortex_data_dict['Mean']['densities'] = [6.6, 86.4, 101.6, 123.9, 54.4, 59.8, 92.3, 42]
+    cortex_data_dict['Std']['densities'] = [2.7, 11.2, 6.5, 6.3, 4.1, 3.8, 0.9, 3.8]
 
     #Height (μm): L1, L2, L3, L4, L5A, L5B, L6A, L6B
     cortex_data_dict['C2']['heights'] = [55, 194.2, 186.2, 262.7, 273.9, 273, 295, 171.2]
@@ -588,28 +572,43 @@ def createRatSomatosensoryCortexDataDict():
     cortex_data_dict['D3']['heights'] = [95, 154.5, 330.5, 233.1, 216.3, 274.7, 321.9, 203.4]
     cortex_data_dict['Mean']['heights'] = [75, 171, 272, 263, 234, 274, 300, 185]
     cortex_data_dict['Std']['heights'] = [20, 21, 76, 31, 35, 1, 19, 16]
-
-    #Volume (mm^3): L1, L2, L3, L4, L5A, L5B, L6A, L6B
-    cortex_data_dict['C2']['volumes'] = [0.007, 0.026, 0.025, 0.036, 0.037, 0.037, 0.040, 0.023]
-    cortex_data_dict['D2']['volumes']  = [0.011, 0.023, 0.042, 0.042, 0.030, 0.039, 0.040, 0.026]
-    cortex_data_dict['D3']['volumes']  = [0.013, 0.020, 0.044, 0.031, 0.029, 0.036, 0.043, 0.027]
-    cortex_data_dict['Mean']['volumes']  = [0.01, 0.023, 0.037, 0.036, 0.032, 0.037, 0.041, 0.025]
-    cortex_data_dict['Std']['volumes']  = [0.003, 0.003, 0.01, 0.005, 0.005, 0.001, 0.001, 0.002]
-
-    #Excitatory neuron count: L1, L2, L3, L4, L5A, L5B, L6A, L6B, Entire columns: C2, D2, D3)  C2, D2, D3
-    cortex_data_dict['Mean']['ex_counts'] = [10, 1701, 3398, 4089, 1394, 1873, 3449, 976]
-    cortex_data_dict['Std']['ex_counts'] = [7, 484, 807, 425, 247, 53, 165, 155]
-
-    #IN neuron count: L1, L2, L3, L4, L5A, L5B, L6A, L6B,  C2, D2, D3
-    cortex_data_dict['Mean']['in_counts'] = [53, 338, 338, 358, 343, 362, 337, 90]
-    cortex_data_dict['Std']['in_counts'] = [6, 40, 109, 15, 65, 62, 31, 17]
-
-    #IN densities 10^3 per mm^3*: L1, L2, L3, L4, L5A, L5B, L6A, L6B)  (C2, D2, D3
-    cortex_data_dict['Mean']['in_densities'] = [5.5, 14.5, 9.1, 10, 10.9, 9.7, 8.2, 3.5]
-    cortex_data_dict['Std']['in_densities'] = [2.2, 0.7, 1.5, 1.1, 3, 1.9, 0.8, 0.4]
-
-    #IN-to-neuron ratios: L1, L2, L3, L4, L5A, L5B, L6A, L6B,  C2, D2, D3
+                        
     cortex_data_dict['Mean']['in_ratios'] = [84.3, 17, 9, 8.1, 19.9, 16.2, 8.9, 8.4]
     cortex_data_dict['Std']['in_ratios'] = [9.5, 2.4, 1.1, 0.5, 4.1, 2.1, 0.9, 0.6]
+    
+#     #NeuN-positive neuron Count: L1, L2, L3, L4, L5A, L5B, L6A, L6B
+#     cortex_data_dict['C2']['counts'] = [72, 2619, 2727, 4465, 2011, 2139, 3687, 877]
+#     cortex_data_dict['D2']['counts'] = [52, 1897, 4001, 4877, 1517, 2231, 3691, 1113]
+#     cortex_data_dict['D3']['counts'] = [65, 1601, 4478, 3999, 1684, 2336, 3980, 1208]
+#     cortex_data_dict['Mean']['counts'] = [63, 2039, 3735, 4447, 1737, 2235, 3786, 1066]
+#     cortex_data_dict['Std']['counts'] = [10, 524, 905, 439, 251, 99, 168, 170]
+
+#     #Neuron Count Standard Column: L1, L2, L3, L4, L5A, L5B, L6A, L6B
+#     cortex_data_dict['C2']['counts_standard'] = [69, 2507, 2610, 4274, 1925, 2047, 3529, 839]
+#     cortex_data_dict['D2']['counts_standard'] = [46, 1674, 3530, 4303, 1339, 1969, 3257, 982]
+#     cortex_data_dict['D3']['counts_standard'] = [60, 1471, 4115, 3675, 1547, 2147, 3657,1110]
+#     cortex_data_dict['Mean']['counts_standard'] = [58, 1884, 3418, 4084, 1604, 2054, 3481, 977]
+#     cortex_data_dict['Std']['counts_standard'] = [12, 549, 758, 355, 297, 89, 204, 135]
+
+#     #Volume (mm^3): L1, L2, L3, L4, L5A, L5B, L6A, L6B
+#     cortex_data_dict['C2']['volumes'] = [0.007, 0.026, 0.025, 0.036, 0.037, 0.037, 0.040, 0.023]
+#     cortex_data_dict['D2']['volumes']  = [0.011, 0.023, 0.042, 0.042, 0.030, 0.039, 0.040, 0.026]
+#     cortex_data_dict['D3']['volumes']  = [0.013, 0.020, 0.044, 0.031, 0.029, 0.036, 0.043, 0.027]
+#     cortex_data_dict['Mean']['volumes']  = [0.01, 0.023, 0.037, 0.036, 0.032, 0.037, 0.041, 0.025]
+#     cortex_data_dict['Std']['volumes']  = [0.003, 0.003, 0.01, 0.005, 0.005, 0.001, 0.001, 0.002]
+
+#     #Excitatory neuron count: L1, L2, L3, L4, L5A, L5B, L6A, L6B, Entire columns: C2, D2, D3)  C2, D2, D3
+#     cortex_data_dict['Mean']['ex_counts'] = [10, 1701, 3398, 4089, 1394, 1873, 3449, 976]
+#     cortex_data_dict['Std']['ex_counts'] = [7, 484, 807, 425, 247, 53, 165, 155]
+
+#     #IN neuron count: L1, L2, L3, L4, L5A, L5B, L6A, L6B,  C2, D2, D3
+#     cortex_data_dict['Mean']['in_counts'] = [53, 338, 338, 358, 343, 362, 337, 90]
+#     cortex_data_dict['Std']['in_counts'] = [6, 40, 109, 15, 65, 62, 31, 17]
+
+#     #IN densities 10^3 per mm^3*: L1, L2, L3, L4, L5A, L5B, L6A, L6B)  (C2, D2, D3
+#     cortex_data_dict['Mean']['in_densities'] = [5.5, 14.5, 9.1, 10, 10.9, 9.7, 8.2, 3.5]
+#     cortex_data_dict['Std']['in_densities'] = [2.2, 0.7, 1.5, 1.1, 3, 1.9, 0.8, 0.4]
+
+    #IN-to-neuron ratios: L1, L2, L3, L4, L5A, L5B, L6A, L6B,  C2, D2, D3
     
     return cortex_data_dict

@@ -69,7 +69,7 @@ class NeuralProbe(object):
         raise NotImplementedError("The shift function is not implemented for \
             this probe")
 
-    def getChannels(self):
+    def getChannels(self, excluded_channel_ids=None):
         '''Returns DataFrame of all channels in the probe
 
         Returns
@@ -77,7 +77,13 @@ class NeuralProbe(object):
         self.channels_df: DataFrame
             DataFrame containing all channels in the probe
         '''
-        return self.channel_df
+        all_channel_ids_set = set(range(self.num_channels))
+        excluded_channel_ids_set = set(excluded_channel_ids)
+        recording_channels_indices_set = all_channel_ids_set - excluded_channel_ids_set
+        recording_channels_indices = list(recording_channels_indices_set)
+        recording_channels_df = self.channel_df.loc[recording_channels_indices].copy()
+        
+        return recording_channels_df
     
     def getNeuronsRadius(self, neuron_df, radius=100.0, excluded_channel_ids=None):
         '''Returns DataFrame of all neurons in a radius around the channels of the probe (sans excluded channels)
@@ -116,7 +122,7 @@ class NeuralProbe(object):
                 else:
                     continue
         close_neurons_indices = list(close_neurons_indices)
-        close_neuron_df = neuron_df.loc[close_neurons_indices]
+        close_neuron_df = neuron_df.loc[close_neurons_indices].copy()
         
         return close_neuron_df
 
