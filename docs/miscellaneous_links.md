@@ -10,7 +10,7 @@
 
 * [MEArec](https://github.com/alejoe91/MEArec) -- Fast and customizable simulation of extracellular recordings on Multi-Electrode-Arrays
 
-* [ERSS](https://github.com/colehurwitz31/ERSS) -- The Extracellular Recording Site Simulator (ERSS) is a tool for creating biophysically realistic recording sites given a probe geometry and brain region. ERSS currently supports the Neuropixels probe geometry and a detailed Somatosensory cortex column brain region of a rat.
+* [ERSS](https://github.com/colehurwitz31/ERSS) -- Extracellular Recording Site Simulator (ERSS) is a tool for creating biophysically realistic recording sites given a probe geometry and brain region. ERSS currently supports the Neuropixels probe geometry and a detailed Somatosensory cortex column brain region of a rat.
 
 * [NoWorkflow](https://pypi.org/project/noworkflow/) -- Provenance framework for Python: The noWorkflow project aims at allowing scientists to benefit from provenance data analysis even when they don’t use a workflow system. Also, the goal is to allow them to avoid using naming conventions to store files originated in previous executions. It uses Software Engineering techniques such as abstract syntax tree (AST) analysis, reflection, and profiling, to collect provenance without the need of a version control system or any other environment.
 
