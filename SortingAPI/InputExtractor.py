@@ -17,7 +17,7 @@ class InputExtractor(object):
         self.implemented_get_raw_slices = False
         self.implemented_get_probe_information = False
 
-    def extractRawSlices(self, t_start, t_end, electrode_ids):
+    def extractRawSlices(self, t_start=None, t_end=None, electrode_ids=None):
         '''This function extracts and returns a slice of the raw data from the
         given electrode ids.
 
