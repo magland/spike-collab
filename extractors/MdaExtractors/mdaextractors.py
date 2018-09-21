@@ -23,7 +23,7 @@ class MdaInputExtractor(InputExtractor):
         self._dataset_params=read_dataset_params(dataset_directory)
         self._samplerate=self._dataset_params['samplerate']
         
-    def extractRawSlices(self, t_start=None, t_end=None, electrode_ids=None):
+    def extractRawTraces(self, t_start=None, t_end=None, electrode_ids=None):
         X=mdaio.DiskReadMda(self._timeseries_path)
         recordings=X.readChunk(i1=0,i2=t_start,N1=X.N1(),N2=t_end-t_start)
         times=np.arange(t_start,t_end)/self._samplerate
