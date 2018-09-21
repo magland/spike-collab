@@ -9,7 +9,7 @@ class InputExtractor(ABC):
 
     '''
     def __init__(self):
-
+        pass
         # self.implemented_get_raw_traces = False
         # self.implemented_get_probe_information = False
 

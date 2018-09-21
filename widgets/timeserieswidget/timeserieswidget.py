@@ -2,12 +2,13 @@ from matplotlib import pyplot as plt
 import numpy as np
 import ipywidgets as widgets
 from matplotlib.ticker import MaxNLocator
+from quantities import Quantity
 
 class TimeseriesWidget:
     def __init__(self,*,input_extractor,output_extractor=None,channels=None,trange=None):
         self._input_extractor=input_extractor
         self._output_extractor=output_extractor
-        self._samplerate=input_extractor.getSamplingFrequency()
+        self._samplerate=input_extractor.getSamplingFrequency()/Quantity(1,'Hz')
         if channels is not None:
             self._visible_channels=channels
         else:
@@ -29,7 +30,7 @@ class TimeseriesWidget:
     def figure(self):
         return self._figure
     def _update_plot(self):
-        chunk0=self._input_extractor.extractRawTraces(
+        chunk0=self._input_extractor.getRawTraces(
             electrode_ids=self._visible_channels,
             t_start=self._visible_trange[0],
             t_end=self._visible_trange[1]
@@ -91,7 +92,7 @@ class TimeseriesWidget:
         self._channel_stats={}
         #M=self._reader.numChannels()
         #N=self._reader.numTimepoints()
-        chunk0=self._input_extractor.extractRawTraces(
+        chunk0=self._input_extractor.getRawTraces(
             electrode_ids=self._visible_channels,
             t_start=self._visible_trange[0],
             t_end=self._visible_trange[1]

@@ -5,6 +5,7 @@ from mountainlab_pytools import mlproc as mlp
 from mountainlab_pytools import mdaio
 import os, json
 import numpy as np
+from quantities import Quantity
 
 class MdaInputExtractor(InputExtractor):
     def __init__(self, dataset_directory, download=True):
@@ -23,14 +24,20 @@ class MdaInputExtractor(InputExtractor):
         self._dataset_params=read_dataset_params(dataset_directory)
         self._samplerate=self._dataset_params['samplerate']
         
-    def extractRawTraces(self, t_start=None, t_end=None, electrode_ids=None):
+    def getNumChannels(self):
+        return self._num_channels
+    
+    def getNumFrames(self):
+        return self._num_timepoints
+        
+    def getRawTraces(self, t_start=None, t_end=None, electrode_ids=None):
         X=mdaio.DiskReadMda(self._timeseries_path)
         recordings=X.readChunk(i1=0,i2=t_start,N1=X.N1(),N2=t_end-t_start)
         times=np.arange(t_start,t_end)/self._samplerate
         return recordings, times
     
     def getSamplingFrequency(self):
-        return self._samplerate
+        return Quantity(self._samplerate,'Hz')
     
     def getProbeInformation(self):
         raise NotImplementedError("The getProbeInformation function is not \
@@ -50,7 +57,7 @@ class MdaOutputExtractor(OutputExtractor):
     def getNumUnits(self):
         return self._num_units
 
-    def getUnitSpikeTimes(self, unit_id, t_start=None, t_stop=None):
+    def getUnitSpikeTrain(self, unit_id, t_start=None, t_stop=None):
         if t_start is None:
             t_start=0
         if t_stop is None:

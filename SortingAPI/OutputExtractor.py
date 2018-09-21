@@ -9,7 +9,7 @@ class OutputExtractor(ABC):
 
     '''
     def __init__(self):
-
+        pass
         # self.implemented_get_num_units = False
         # self.implemented_get_unit_spike_times = False
 

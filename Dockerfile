@@ -7,6 +7,7 @@ RUN conda install mountainlab>=0.15
 RUN conda install mountainlab_pytools>=0.7
 RUN conda install ml_ephys ml_ms4alg ml_ms3 ml_pyms
 RUN conda install ml_spikeforest
+RUN pip install quantities
 
 ### Add this repo
 ADD . /working
