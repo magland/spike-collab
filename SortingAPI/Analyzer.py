@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import quantities as pq
+import neo
 
 # use InputExtractor and OutputExtractor
 from InputExtractor import InputExtractor
@@ -19,11 +20,11 @@ class Analyzer(object):
         agree on a standard attribute every spike sorter needs)
         '''
         # to perform comparisons between spike sorters
-        if type(input_extractor) == InputExtractor:
+        if isinstance(input_extractor, InputExtractor):
             self.input_extractor = input_extractor
         else:
             raise AttributeError('Input extractor argument should be an InputExtractor object')
-        if type(output_extractor) == OutputExtractor:
+        if isinstance(output_extractor, OutputExtractor):
             self.output_extractor = output_extractor
         else:
             raise AttributeError('Output extractor argument should be an OutputExtractor object')
@@ -67,7 +68,7 @@ class Analyzer(object):
         '''
         recordings, times = self.input_extractor.extractRawSlices(t_start, t_stop)
         fs = self.input_extractor.getSamplingFrequency()
-        spike_times = self.input_extractor.getUnitSpikeTimes(unit_id, t_start, t_stop)
+        spike_times = self.output_extractor.getUnitSpikeTimes(unit_id, t_start, t_stop)
 
         if type(cutout[0]) == float:
             n_pad = [int(cutout[0] * pq.ms * fs.rescale('kHz')), int(cutout[1] * pq.ms * fs.rescale('kHz'))]
@@ -77,29 +78,27 @@ class Analyzer(object):
         nsamples = np.sum(n_pad)
 
         waveforms = np.zeros((len(spike_times), nchs, nsamples))
-        first_spike = True
+
+        print('Number of waveforms: ', len(spike_times))
 
         for t_i, t in enumerate(spike_times):
             idx = np.where(times > t)[0]
             if len(idx) != 0:
+                idx = idx[0]
                 # find single waveforms crossing thresholds
-                if idx - n_pad > 0 and idx + n_pad < nPts:
-                    t_spike = times[idx - n_pad:idx + n_pad]
-                    wf = recordings[:, idx - n_pad:idx + n_pad]
-                elif idx - n_pad < 0:
-                    t_spike = times[:idx + n_pad]
-                    t_spike = np.pad(t_spike, (np.abs(idx - n_pad), 0), 'constant') * unit
-                    wf = recordings[:, :idx + n_pad]
-                    wf = np.pad(spike_rec, ((0, 0), (np.abs(idx - n_pad), 0)), 'constant')
-                elif idx + n_pad > nPts:
-                    t_spike = times[idx - n_pad:]
-                    t_spike = np.pad(t_spike, (0, idx + n_pad - nPts), 'constant') * unit
-                    wf = recordings[:, idx - n_pad:]
-                    wf = np.pad(spike_rec, ((0, 0), (0, idx + n_pad - nPts)), 'constant')
-                if first_spike:
-                    nsamples = len(spike_rec)
-                    waveforms = np.zeros((len(spike_times), nchs, nsamples))
-                    first_spike = False
+                if idx - n_pad[0] > 0 and idx + n_pad[1] < npts:
+                    t_spike = times[idx - n_pad[0]:idx + n_pad[1]]
+                    wf = recordings[:, idx - n_pad[0]:idx + n_pad[1]]
+                elif idx - n_pad[0] < 0:
+                    t_spike = times[:idx + n_pad[1]]
+                    t_spike = np.pad(t_spike, (np.abs(idx - n_pad[0]), 0), 'constant') * unit
+                    wf = recordings[:, :idx + n_pad[1]]
+                    wf = np.pad(spike_rec, ((0, 0), (np.abs(idx - n_pad[0]), 0)), 'constant')
+                elif idx + n_pad[1] > npts:
+                    t_spike = times[idx - n_pad[0]:]
+                    t_spike = np.pad(t_spike, (0, idx + n_pad[1] - npts), 'constant') * unit
+                    wf = recordings[:, idx - n_pad[0]:]
+                    wf = np.pad(spike_rec, ((0, 0), (0, idx + n_pad[1] - npts)), 'constant')
                 waveforms[t_i] = wf
 
         return waveforms
@@ -127,19 +126,19 @@ class Analyzer(object):
             # extract all spiketrains
             spike_trains = []
             for i in range(self.output_extractor.getNumUnits()):
-                spike_times = self.input_extractor.getUnitSpikeTimes(i, t_start, t_stop)
+                spike_times = self.output_extractor.getUnitSpikeTimes(i, t_start, t_stop)
                 st = neo.SpikeTrain(spike_times, t_start=t_start, t_stop=t_stop)
-                spike_trains.append(spiketrain)
-        elif type(unit_id) is int:
-            spike_times = self.input_extractor.getUnitSpikeTimes(unit_id, t_start, t_stop)
+                spike_trains.append(st)
+        elif isinstance(unit_id, int):
+            spike_times = self.output_extractor.getUnitSpikeTimes(unit_id, t_start, t_stop)
             st = neo.SpikeTrain(spike_times, t_start=t_start, t_stop=t_stop)
             spike_trains = [st]
-        elif type(unit_id) is list:
+        elif isinstance(unit_id, list):
             spike_trains = []
             for i in unit_id:
-                spike_times = self.input_extractor.getUnitSpikeTimes(i, t_start, t_stop)
+                spike_times = self.output_extractor.getUnitSpikeTimes(i, t_start, t_stop)
                 st = neo.SpikeTrain(spike_times, t_start=t_start, t_stop=t_stop)
-                spike_trains.append(spiketrain)
+                spike_trains.append(st)
         else:
             raise AttributeError('unit_id should be either None, int, or list')
 
