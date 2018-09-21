@@ -8,7 +8,7 @@ class TimeseriesWidget:
     def __init__(self,*,input_extractor,output_extractor=None,channels=None,trange=None):
         self._input_extractor=input_extractor
         self._output_extractor=output_extractor
-        self._samplerate=input_extractor.getSamplingFrequency()/Quantity(1,'Hz')
+        self._samplerate=input_extractor.getSamplingFrequency().rescale('Hz').magnitude
         if channels is not None:
             self._visible_channels=channels
         else:
