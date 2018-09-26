@@ -23,18 +23,20 @@ class TimeseriesWidget:
         self._vspacing=self._mean_channel_std*15
         self._widget=widgets.Output()
         self._control_panel=self._create_control_panel()
-        display(widgets.VBox([self._control_panel,self._widget]))
+        self._main_widget=widgets.VBox([self._control_panel,self._widget])
         self._update_plot()
+    def display(self):
+        display(self._main_widget)
     def widget(self):
         return self._widget
     def figure(self):
         return self._figure
     def _update_plot(self):
         chunk0=self._input_extractor.getRawTraces(
-            electrode_ids=self._visible_channels,
-            t_start=self._visible_trange[0],
-            t_end=self._visible_trange[1]
-        )[0]
+            channel_ids=self._visible_channels,
+            start_frame=self._visible_trange[0],
+            end_frame=self._visible_trange[1]
+        )
         self._widget.clear_output(wait=True)
         with self._widget:
             plt.xlim(self._visible_trange[0]/self._samplerate,self._visible_trange[1]/self._samplerate)
@@ -93,10 +95,10 @@ class TimeseriesWidget:
         #M=self._reader.numChannels()
         #N=self._reader.numTimepoints()
         chunk0=self._input_extractor.getRawTraces(
-            electrode_ids=self._visible_channels,
-            t_start=self._visible_trange[0],
-            t_end=self._visible_trange[1]
-        )[0]
+            channel_ids=self._visible_channels,
+            start_frame=self._visible_trange[0],
+            end_frame=self._visible_trange[1]
+        )
         #chunk0=self._reader.getChunk(channels=self._visible_channels,trange=self._visible_trange)
         M0=chunk0.shape[0]
         N0=chunk0.shape[1]
