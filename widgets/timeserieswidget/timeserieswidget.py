@@ -2,6 +2,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import ipywidgets as widgets
 from matplotlib.ticker import MaxNLocator
+from quantities import Quantity
 
 class TimeseriesWidget:
     def __init__(self,*,input_extractor,output_extractor=None,channels=None,trange=None,width=14,height=7):
