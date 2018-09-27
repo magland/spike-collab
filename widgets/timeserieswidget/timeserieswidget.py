@@ -2,29 +2,28 @@ from matplotlib import pyplot as plt
 import numpy as np
 import ipywidgets as widgets
 from matplotlib.ticker import MaxNLocator
-from quantities import Quantity
 
 class TimeseriesWidget:
-    def __init__(self,*,input_extractor,output_extractor=None,channels=None,trange=None):
+    def __init__(self,*,input_extractor,output_extractor=None,channels=None,trange=None,width=14,height=7):
         self._input_extractor=input_extractor
         self._output_extractor=output_extractor
-        self._samplerate=input_extractor.getSamplingFrequency().rescale('Hz').magnitude
-        if channels is not None:
-            self._visible_channels=channels
-        else:
-            raise Exception('TODO: default channels')
-            #self._visible_channels=range(1,reader.numChannels()+1)
-        if trange is not None:
-            self._visible_trange=trange
-        else:
-            raise Exception('TODO: default trange')
-            #self._visible_trange=[0,np.minimum(reader.numTimepoints(),3500)]
+        self._samplerate=input_extractor.getSamplingFrequency()
+        self._width=width
+        self._height=height
+        self._visible_channels=channels
+        if self._visible_channels is None:
+            self._visible_channels=range(input_extractor.getNumChannels())
+        self._visible_trange=trange
+        if self._visible_trange is None:
+            self._visible_trange=[0,input_extractor.getNumFrames()]
         self._initialize_stats()
         self._vspacing=self._mean_channel_std*15
         self._widget=widgets.Output()
         self._control_panel=self._create_control_panel()
         self._main_widget=widgets.VBox([self._control_panel,self._widget])
         self._update_plot()
+    def plot(self):
+        self._do_plot()
     def display(self):
         display(self._main_widget)
     def widget(self):
@@ -32,30 +31,32 @@ class TimeseriesWidget:
     def figure(self):
         return self._figure
     def _update_plot(self):
+        self._widget.clear_output(wait=True)
+        with self._widget:
+            self._do_plot()
+    def _do_plot(self):
         chunk0=self._input_extractor.getRawTraces(
             channel_ids=self._visible_channels,
             start_frame=self._visible_trange[0],
             end_frame=self._visible_trange[1]
         )
-        self._widget.clear_output(wait=True)
-        with self._widget:
-            plt.xlim(self._visible_trange[0]/self._samplerate,self._visible_trange[1]/self._samplerate)
-            plt.ylim(-self._vspacing,self._vspacing*len(self._visible_channels))
-            plt.gcf().set_size_inches(14,7)
-            plt.gca().get_xaxis().set_major_locator(MaxNLocator(prune='both'))
-            plt.gca().get_yaxis().set_ticks([])
-            plt.xlabel('Time (sec)')
-            
-            self._plots={}
-            self._plot_offsets={}
-            offset0=self._vspacing*(len(self._visible_channels)-1)
-            tt=np.arange(self._visible_trange[0],self._visible_trange[1])/self._samplerate
-            for im,m in enumerate(self._visible_channels):
-                self._plot_offsets[m]=offset0
-                self._plots[m]=plt.plot(tt,self._plot_offsets[m]+chunk0[im,:])
-                offset0=offset0-self._vspacing
-            self._figure=plt.gcf()
-            plt.show()
+        plt.xlim(self._visible_trange[0]/self._samplerate,self._visible_trange[1]/self._samplerate)
+        plt.ylim(-self._vspacing,self._vspacing*len(self._visible_channels))
+        plt.gcf().set_size_inches(self._width,self._height)
+        plt.gca().get_xaxis().set_major_locator(MaxNLocator(prune='both'))
+        plt.gca().get_yaxis().set_ticks([])
+        plt.xlabel('Time (sec)')
+
+        self._plots={}
+        self._plot_offsets={}
+        offset0=self._vspacing*(len(self._visible_channels)-1)
+        tt=np.arange(self._visible_trange[0],self._visible_trange[1])/self._samplerate
+        for im,m in enumerate(self._visible_channels):
+            self._plot_offsets[m]=offset0
+            self._plots[m]=plt.plot(tt,self._plot_offsets[m]+chunk0[im,:])
+            offset0=offset0-self._vspacing
+        self._figure=plt.gcf()
+        plt.show()
     def _pan_left(self):
         self._pan(-0.1)
     def _pan_right(self):
