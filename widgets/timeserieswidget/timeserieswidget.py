@@ -8,7 +8,7 @@ class TimeseriesWidget:
     def __init__(self,*,input_extractor,output_extractor=None,channels=None,trange=None):
         self._input_extractor=input_extractor
         self._output_extractor=output_extractor
-        self._samplerate=input_extractor.getSamplingFrequency().rescale('Hz').magnitude
+        self._samplerate=input_extractor.getSamplingFrequency()
         if channels is not None:
             self._visible_channels=channels
         else:
@@ -45,7 +45,7 @@ class TimeseriesWidget:
             plt.gca().get_xaxis().set_major_locator(MaxNLocator(prune='both'))
             plt.gca().get_yaxis().set_ticks([])
             plt.xlabel('Time (sec)')
-            
+
             self._plots={}
             self._plot_offsets={}
             offset0=self._vspacing*(len(self._visible_channels)-1)
