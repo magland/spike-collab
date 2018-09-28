@@ -2,7 +2,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 import ipywidgets as widgets
 from matplotlib.ticker import MaxNLocator
-from quantities import Quantity
 
 class TimeseriesWidget:
     def __init__(self,*,input_extractor,output_extractor=None,channels=None,trange=None,width=14,height=7):
@@ -16,7 +15,7 @@ class TimeseriesWidget:
             self._visible_channels=range(input_extractor.getNumChannels())
         self._visible_trange=trange
         if self._visible_trange is None:
-            self._visible_trange=[0,input_extractor.getNumFrames()]
+            self._visible_trange=[0,np.minimum(10000,input_extractor.getNumFrames())]
         self._initialize_stats()
         self._vspacing=self._mean_channel_std*15
         self._widget=widgets.Output()
